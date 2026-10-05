@@ -1,0 +1,122 @@
+\documentclass[11pt, a4paper]{article}
+
+\usepackage[a4paper, margin=2.5cm]{geometry}
+\usepackage[brazil]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\setlist[itemize]{label=-}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{hyperref}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue!70!black,
+    citecolor=blue!70!black,
+    urlcolor=blue!70!black
+}
+
+\lstset{
+    basicstyle=\ttfamily\small,
+    breaklines=true,
+    frame=single,
+    backgroundcolor=\color{gray!10},
+    numbers=none
+}
+
+\title{Atividade 1 - Mineração de Dados}
+\author{Gabriel M. Brum,  Pedro H. M. Gatti  \\ Programa da Pós-Graduação em Ciência da Computação (PPGCC) - UNESP}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+resumo
+\end{abstract}
+
+\vspace{0.5cm}
+
+\section{Introdução}
+
+Nesta atividade foi solicitado escolhermos um conjunto de dados que contenha ao menos 4 classes, então aplicar o pré-processamento que julgassemos adequado. Após isso, deveríamos testar os seguintes algoritmos: árvore, \textit{bagging}, \textit{boosting} e \textit{random forest}. Ao final, avaliar quais deles gerou o melhor modelo usando tanto alguma técnica de validação, escolhendo uma métrica de desempenho. Considerando o de melhor resultado, faça a \textit{setagem} de hiperparâmetros no mesmo para ver se o desempenho melhora. Adicionalmente, deveriamos transformar o problema multiclasse em problemas binários usando OVA e OVO. Escolher uma métrica de desempenho e analisar qual das abordagens se saiu melhor para alguma técnica de avaliação utilizando o algoritmo de árvore.
+
+\section{\textit{Dataset}}
+
+O conjunto de dados \textit{Car Evaluation} é um \textit{benchmark} da área de aprendizado de máquina, disponibilizado no repositório UCI por Bohanec e Zupan em 1997 \cite{zupan1997machine}. Sua origem remonta aos trabalhos de Bohanec e Rajkovič (1988, 1990) no contexto de sistemas especialistas de apoio à decisão multicritério (ferramenta DEX) \cite{bohanec1988knowledge}. Originalmente, o domínio foi modelado através de uma estrutura hierárquica na qual seis atributos primários determinavam conceitos intermediários de custo e viabilidade técnica antes de inferir a aceitabilidade final do veículo. Na versão publicada, os conceitos intermediários foram suprimidos, restando uma relação direta entre os seis atributos descritivos e a classe-alvo distribuída em 1728 instâncias (cobrindo a totalidade do espaço vetorial discreto do problema).
+
+O conjunto tem um total de 1728 instâncias, 6 atributos e 4 classes (\textit{unacc = unnacceptable}, \textit{acc = acceptable}, \textit{good} e \textit{vgood = very good}) que indicam a condição de compra de veículos. A distribuição de classes está apresentada na Tabela \ref{tab:distribuicao_classes}, já os atributos estão descritos na Tabela \ref{tab:descricao_atributos}.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Distribuição das classes no conjunto de dados Car Evaluation.}
+    \label{tab:distribuicao_classes}
+    \begin{tabular}{|l|c|r|}
+        \hline
+        Classe & Quantidade de instâncias & \% do total de amostras \\
+        \hline
+        \textit{unacc}  & 1210 & 70{,}023\% \\
+        \textit{acc}    & 384  & 22{,}222\% \\
+        \textit{good}   & 69   & 3{,}993\%  \\
+        \textit{vgood}  & 65   & 3{,}762\%  \\
+        \hline
+        \textbf{Total}  & 1728 & 100{,}000\% \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\begin{table}[htbp]
+    \centering
+    \caption{Descrição dos atributos e variável-alvo do conjunto de dados Car Evaluation.}
+    \label{tab:descricao_atributos}
+    \begin{tabular}{llll}
+        \hline
+        \textbf{Atributo} &  \textbf{Valores} & \textbf{Ordem Natural} \\
+        \hline
+        \texttt{buying}   &  \textit{low}, \textit{med}, \textit{high}, \textit{v-high} & $\text{low} < \text{med} < \text{high} < \text{v-high}$ \\
+        \texttt{maint}    &  \textit{low}, \textit{med}, \textit{high}, \textit{v-high} & $\text{low} < \text{med} < \text{high} < \text{v-high}$ \\
+        \texttt{doors}    &  \textit{2}, \textit{3}, \textit{4}, \textit{5more} & $2 < 3 < 4 < \text{5more}$ \\
+        \texttt{persons}  &  \textit{2}, \textit{4}, \textit{more} & $2 < 4 < \text{more}$ \\
+        \texttt{lug\_boot} &  \textit{small}, \textit{med}, \textit{big} & $\text{small} < \text{med} < \text{big}$ \\
+        \texttt{safety}   &  \textit{low}, \textit{med}, \textit{high} & $\text{low} < \text{med} < \text{high}$ \\
+        \hline
+        \textbf{Classe} (\texttt{class}) &  \textit{unacc}, \textit{acc}, \textit{good}, \textit{vgood} & $\text{unacc} < \text{acc} < \text{good} < \text{vgood}$ \\
+        \hline
+    \end{tabular}
+\end{table}
+
+\section{Pré-Processamento}
+
+Por conta de se tratar de um conjunto de dados categórico, e que possuia ordem entre as classes, optamos por utilizar a técnica de \textit{Ordinal Encoding} para transformar os atributos em valores numéricos. A Tabela \ref{tab:label_encoding} apresenta a codificação utilizada para cada atributo.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Mapeamento de codificação ordinal aplicado aos atributos e à classe-alvo.}
+    \label{tab:label_encoding}
+    \begin{tabular}{lll}
+        \hline
+        \textbf{Atributo} & \textbf{Categoria Original} & \textbf{Valor Codificado} \\
+        \hline
+        \texttt{buying}   & \textit{low}, \textit{med}, \textit{high}, \textit{vhigh}   & 1, 2, 3, 4 \\
+        \texttt{maint}    & \textit{low}, \textit{med}, \textit{high}, \textit{vhigh}   & 1, 2, 3, 4 \\
+        \texttt{doors}    & \textit{2}, \textit{3}, \textit{4}, \textit{5more}          & 2, 3, 4, 5 \\
+        \texttt{persons}  & \textit{2}, \textit{4}, \textit{more}                       & 2, 4, 5 \\
+        \texttt{lug\_boot} & \textit{small}, \textit{med}, \textit{big}                 & 1, 2, 3 \\
+        \texttt{safety}   & \textit{low}, \textit{med}, \textit{high}                   & 1, 2, 3 \\
+        \hline
+        \textbf{Classe} (\texttt{class}) & \textit{unacc}, \textit{acc}, \textit{good}, \textit{vgood} & 0, 1, 2, 3 \\
+        \hline
+    \end{tabular}
+\end{table}
+
+
+\bibliographystyle{plain} % ou 'abntex2-alf', 'ieee', etc.
+\bibliography{referencias} % Nome do seu arquivo referencias.bib (sem a extensão)
+
+
+\end{document}
