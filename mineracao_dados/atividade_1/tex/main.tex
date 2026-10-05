@@ -114,6 +114,41 @@ Por conta de se tratar de um conjunto de dados categórico, e que possuia ordem 
     \end{tabular}
 \end{table}
 
+\section{Metodologia}
+\label{sec:metodologia}
+
+O procedimento experimental foi estruturado em duas etapas principais, orientadas pelo uso de validação estratificada e pela métrica \textit{Macro F1-Score} ($F1_{\text{macro}}$), fundamental para lidar com o desbalanceamento das quatro classes do problema.
+
+\subsection{Parte I: Comparação de Modelos e Otimização de Hiperparâmetros}
+\label{subsec:metodologia_parte1}
+
+Nesta etapa, comparou-se o desempenho preditivo de quatro algoritmos de aprendizado de máquina supervisionado:
+\begin{itemize}
+    \item \textbf{Árvore de Decisão (\textit{Decision Tree}):} Classificador base baseado em divisões recursivas de atributos;
+    \item \textbf{Bagging (\textit{Bootstrap Aggregating}):} Comitê que combina estimadores independentes treinados com amostragem com reposição;
+    \item \textbf{AdaBoost (\textit{Adaptive Boosting}):} Método de agregação sequencial que ajusta pesos iterativamente para instâncias classificadas incorretamente;
+    \item \textbf{Random Forest:} Floresta aleatória que combina amostragem \textit{bootstrap} com seleção aleatória de subconjuntos de atributos em cada nó.
+\end{itemize}
+
+O protocolo de validação adotado para a comparação inicial dos quatro modelos foi a validação cruzada estratificada em 5 \textit{folds} (\textit{Stratified 5-Fold Cross-Validation}) com embaralhamento dos dados (\textit{shuffle}), utilizando o $F1_{\text{macro}}$ como critério decisor.
+
+O classificador que alcançou o maior valor médio de $F1_{\text{macro}}$ foi selecionado para a fase de ajuste fino de hiperparâmetros (\textit{hyperparameter tuning}). O ajuste foi conduzido através de \textit{GridSearchCV} com validação cruzada interna estratificada de 5 \textit{folds} e métrica de pontuação \texttt{scoring='f1\_macro'}. Por fim, avaliou-se o ganho de desempenho obtido confrontando os resultados do modelo antes e após a otimização no conjunto de teste independente (Holdout 70/30 estratificado).
+
+\subsection{Parte II: Decomposição Multiclasse em Problemas Binários}
+\label{subsec:metodologia_parte2}
+
+Nesta etapa, investigou-se a estratégia de binarização do problema multiclasse utilizando exclusivamente a Árvore de Decisão (\texttt{DecisionTreeClassifier(random\_state=42)}) como algoritmo base:
+
+\begin{itemize}
+    \item \textbf{One-vs-All (OVA / One-vs-Rest):} Implementado por meio da classe \texttt{OneVsRestClassifier}, treina um classificador binário para cada classe contra o agrupamento das demais, totalizando 4 modelos;
+    \item \textbf{One-vs-One (OVO):} Implementado por meio da classe \texttt{OneVsOneClassifier}, treina um classificador binário dedicado para cada par possível de classes, totalizando $\frac{4 \times 3}{2} = 6$ modelos, com resolução final por votação majoritária.
+\end{itemize}
+
+Ambas as abordagens foram avaliadas sob dois esquemas de validação complementares:
+\begin{enumerate}
+    \item \textbf{Holdout Estratificado (70/30):} Particionamento dos dados em 70\% para treino e 30\% para teste (\texttt{random\_state=42}), preservando a proporção de cada classe. A partir das predições no conjunto de teste, computaram-se a acurácia, o $F1_{\text{macro}}$ e as matrizes de confusão de cada método.
+    \item \textbf{Validação Cruzada Estratificada ($k=5$):} Avaliação via \texttt{StratifiedKFold(n\_splits=5, shuffle=True, random\_state=42)}, mensurando a média e o desvio padrão da acurácia e do $F1_{\text{macro}}$ ao longo das 5 dobras para determinar a abordagem de melhor desempenho.
+\end{enumerate}
 
 \bibliographystyle{plain} % ou 'abntex2-alf', 'ieee', etc.
 \bibliography{referencias} % Nome do seu arquivo referencias.bib (sem a extensão)
