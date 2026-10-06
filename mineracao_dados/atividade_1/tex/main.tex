@@ -7,25 +7,15 @@
 
 \usepackage{amsmath}
 \usepackage{booktabs}
-\usepackage{enumitem}
-\setlist[itemize]{label=-}
 \usepackage{xcolor}
-\usepackage{listings}
 \usepackage{hyperref}
+\usepackage{graphicx}
 
 \hypersetup{
     colorlinks=true,
     linkcolor=blue!70!black,
     citecolor=blue!70!black,
     urlcolor=blue!70!black
-}
-
-\lstset{
-    basicstyle=\ttfamily\small,
-    breaklines=true,
-    frame=single,
-    backgroundcolor=\color{gray!10},
-    numbers=none
 }
 
 \title{Atividade 1 - Mineração de Dados}
@@ -36,122 +26,176 @@
 
 \maketitle
 
-\begin{abstract}
-resumo
-\end{abstract}
-
-\vspace{0.5cm}
-
 \section{Introdução}
 
-Nesta atividade foi solicitado escolhermos um conjunto de dados que contenha ao menos 4 classes, então aplicar o pré-processamento que julgassemos adequado. Após isso, deveríamos testar os seguintes algoritmos: árvore, \textit{bagging}, \textit{boosting} e \textit{random forest}. Ao final, avaliar quais deles gerou o melhor modelo usando tanto alguma técnica de validação, escolhendo uma métrica de desempenho. Considerando o de melhor resultado, faça a \textit{setagem} de hiperparâmetros no mesmo para ver se o desempenho melhora. Adicionalmente, deveriamos transformar o problema multiclasse em problemas binários usando OVA e OVO. Escolher uma métrica de desempenho e analisar qual das abordagens se saiu melhor para alguma técnica de avaliação utilizando o algoritmo de árvore.
+Nesta atividade, escolheu-se um conjunto de dados com ao menos 4 classes e aplicou-se o pré-processamento adequado. Em seguida, compararam-se os algoritmos de árvore de decisão, \textit{bagging}, \textit{boosting} e \textit{random forest} por meio de uma técnica de validação e de uma métrica de desempenho, e ajustaram-se os hiperparâmetros do melhor modelo para verificar se o desempenho melhora. Por fim, o problema multiclasse foi transformado em problemas binários pelas estratégias OVA e OVO, e comparou-se qual delas se saiu melhor usando o algoritmo de árvore.
 
-\section{\textit{Dataset}}
+\section{\textit{Dataset} e pré-processamento}
 
-O conjunto de dados \textit{Car Evaluation} é um \textit{benchmark} da área de aprendizado de máquina, disponibilizado no repositório UCI por Bohanec e Zupan em 1997 \cite{zupan1997machine}. Sua origem remonta aos trabalhos de Bohanec e Rajkovič (1988, 1990) no contexto de sistemas especialistas de apoio à decisão multicritério (ferramenta DEX) \cite{bohanec1988knowledge}. Originalmente, o domínio foi modelado através de uma estrutura hierárquica na qual seis atributos primários determinavam conceitos intermediários de custo e viabilidade técnica antes de inferir a aceitabilidade final do veículo. Na versão publicada, os conceitos intermediários foram suprimidos, restando uma relação direta entre os seis atributos descritivos e a classe-alvo distribuída em 1728 instâncias (cobrindo a totalidade do espaço vetorial discreto do problema).
-
-O conjunto tem um total de 1728 instâncias, 6 atributos e 4 classes (\textit{unacc = unnacceptable}, \textit{acc = acceptable}, \textit{good} e \textit{vgood = very good}) que indicam a condição de compra de veículos. A distribuição de classes está apresentada na Tabela \ref{tab:distribuicao_classes}, já os atributos estão descritos na Tabela \ref{tab:descricao_atributos}.
+O conjunto \textit{Car Evaluation}, disponibilizado no repositório UCI por Bohanec e Zupan em 1997~\cite{zupan1997machine}, tem origem em sistemas especialistas de decisão multicritério (ferramenta DEX)~\cite{bohanec1988knowledge}. Na versão publicada, seis atributos categóricos descrevem diretamente a aceitabilidade de compra de um veículo em quatro classes (\textit{unacc}, \textit{acc}, \textit{good} e \textit{vgood}), e as 1728 instâncias cobrem todo o espaço discreto de combinações dos atributos. Não há valores nulos nem instâncias duplicadas. A distribuição de classes (Tabela~\ref{tab:distribuicao_classes}) é fortemente desbalanceada.
 
 \begin{table}[htbp]
     \centering
-    \caption{Distribuição das classes no conjunto de dados Car Evaluation.}
+    \caption{Distribuição das classes no conjunto de dados \textit{Car Evaluation}.}
     \label{tab:distribuicao_classes}
-    \begin{tabular}{|l|c|r|}
-        \hline
-        Classe & Quantidade de instâncias & \% do total de amostras \\
-        \hline
-        \textit{unacc}  & 1210 & 70{,}023\% \\
-        \textit{acc}    & 384  & 22{,}222\% \\
-        \textit{good}   & 69   & 3{,}993\%  \\
-        \textit{vgood}  & 65   & 3{,}762\%  \\
-        \hline
-        \textbf{Total}  & 1728 & 100{,}000\% \\
-        \hline
+    \begin{tabular}{llcr}
+        \toprule
+        Classe & Significado &Instâncias & \% do total \\
+        \midrule
+        \textit{unacc} & Inaceitável & 1210 & 70{,}023\% \\
+        \textit{acc}   & Aceitável & 384  & 22{,}222\% \\
+        \textit{good}  & Bom & 69   & 3{,}993\%  \\
+        \textit{vgood} & Muito Bom & 65   & 3{,}762\%  \\
+        \midrule
+        Total  & 1728 & 100{,}000\% \\
+        \bottomrule
     \end{tabular}
 \end{table}
 
-\begin{table}[htbp]
-    \centering
-    \caption{Descrição dos atributos e variável-alvo do conjunto de dados Car Evaluation.}
-    \label{tab:descricao_atributos}
-    \begin{tabular}{llll}
-        \hline
-        \textbf{Atributo} &  \textbf{Valores} & \textbf{Ordem Natural} \\
-        \hline
-        \texttt{buying}   &  \textit{low}, \textit{med}, \textit{high}, \textit{v-high} & $\text{low} < \text{med} < \text{high} < \text{v-high}$ \\
-        \texttt{maint}    &  \textit{low}, \textit{med}, \textit{high}, \textit{v-high} & $\text{low} < \text{med} < \text{high} < \text{v-high}$ \\
-        \texttt{doors}    &  \textit{2}, \textit{3}, \textit{4}, \textit{5more} & $2 < 3 < 4 < \text{5more}$ \\
-        \texttt{persons}  &  \textit{2}, \textit{4}, \textit{more} & $2 < 4 < \text{more}$ \\
-        \texttt{lug\_boot} &  \textit{small}, \textit{med}, \textit{big} & $\text{small} < \text{med} < \text{big}$ \\
-        \texttt{safety}   &  \textit{low}, \textit{med}, \textit{high} & $\text{low} < \text{med} < \text{high}$ \\
-        \hline
-        \textbf{Classe} (\texttt{class}) &  \textit{unacc}, \textit{acc}, \textit{good}, \textit{vgood} & $\text{unacc} < \text{acc} < \text{good} < \text{vgood}$ \\
-        \hline
-    \end{tabular}
-\end{table}
-
-\section{Pré-Processamento}
-
-Por conta de se tratar de um conjunto de dados categórico, e que possuia ordem entre as classes, optamos por utilizar a técnica de \textit{Ordinal Encoding} para transformar os atributos em valores numéricos. A Tabela \ref{tab:label_encoding} apresenta a codificação utilizada para cada atributo.
+Como todos os atributos, e a própria classe, têm ordem natural, aplicou-se \textit{Ordinal Encoding} (Tabela~\ref{tab:encoding}).
 
 \begin{table}[htbp]
     \centering
-    \caption{Mapeamento de codificação ordinal aplicado aos atributos e à classe-alvo.}
-    \label{tab:label_encoding}
+    \caption{Atributos, valores originais (em ordem crescente) e codificação ordinal aplicada.}
+    \label{tab:encoding}
     \begin{tabular}{lll}
-        \hline
-        \textbf{Atributo} & \textbf{Categoria Original} & \textbf{Valor Codificado} \\
-        \hline
-        \texttt{buying}   & \textit{low}, \textit{med}, \textit{high}, \textit{vhigh}   & 1, 2, 3, 4 \\
-        \texttt{maint}    & \textit{low}, \textit{med}, \textit{high}, \textit{vhigh}   & 1, 2, 3, 4 \\
-        \texttt{doors}    & \textit{2}, \textit{3}, \textit{4}, \textit{5more}          & 2, 3, 4, 5 \\
-        \texttt{persons}  & \textit{2}, \textit{4}, \textit{more}                       & 2, 4, 5 \\
-        \texttt{lug\_boot} & \textit{small}, \textit{med}, \textit{big}                 & 1, 2, 3 \\
-        \texttt{safety}   & \textit{low}, \textit{med}, \textit{high}                   & 1, 2, 3 \\
-        \hline
-        \textbf{Classe} (\texttt{class}) & \textit{unacc}, \textit{acc}, \textit{good}, \textit{vgood} & 0, 1, 2, 3 \\
-        \hline
+        \toprule
+        Atributo & Valores originais & Codificação \\
+        \midrule
+        \texttt{buying}, \texttt{maint} & \textit{low}, \textit{med}, \textit{high}, \textit{vhigh} & 1, 2, 3, 4 \\
+        \texttt{doors}    & \textit{2}, \textit{3}, \textit{4}, \textit{5more} & 2, 3, 4, 5 \\
+        \texttt{persons}  & \textit{2}, \textit{4}, \textit{more}              & 2, 4, 5 \\
+        \texttt{lug\_boot} & \textit{small}, \textit{med}, \textit{big}        & 1, 2, 3 \\
+        \texttt{safety}   & \textit{low}, \textit{med}, \textit{high}          & 1, 2, 3 \\
+        \midrule
+        \texttt{class} (alvo) & \textit{unacc}, \textit{acc}, \textit{good}, \textit{vgood} & 0, 1, 2, 3 \\
+        \bottomrule
     \end{tabular}
 \end{table}
 
 \section{Metodologia}
 \label{sec:metodologia}
 
-O procedimento experimental foi estruturado em duas etapas principais, orientadas pelo uso de validação estratificada e pela métrica \textit{Macro F1-Score} ($F1_{\text{macro}}$), fundamental para lidar com o desbalanceamento das quatro classes do problema.
+Todos os experimentos usaram a biblioteca \textit{scikit-learn}~\cite{pedregosa2011}. Devido ao desbalanceamento, a métrica decisora foi o \textit{Macro F1-Score} ($F1_{\text{macro}}$), que atribui o mesmo peso a todas as classes~\cite{sokolova2009}, com validação estratificada em todas as etapas.
 
-\subsection{Parte I: Comparação de Modelos e Otimização de Hiperparâmetros}
-\label{subsec:metodologia_parte1}
+\subsection{Parte I: Comparação de modelos e otimização de hiperparâmetros}
 
-Nesta etapa, comparou-se o desempenho preditivo de quatro algoritmos de aprendizado de máquina supervisionado:
-\begin{itemize}
-    \item \textbf{Árvore de Decisão (\textit{Decision Tree}):} Classificador base baseado em divisões recursivas de atributos;
-    \item \textbf{Bagging (\textit{Bootstrap Aggregating}):} Comitê que combina estimadores independentes treinados com amostragem com reposição;
-    \item \textbf{AdaBoost (\textit{Adaptive Boosting}):} Método de agregação sequencial que ajusta pesos iterativamente para instâncias classificadas incorretamente;
-    \item \textbf{Random Forest:} Floresta aleatória que combina amostragem \textit{bootstrap} com seleção aleatória de subconjuntos de atributos em cada nó.
-\end{itemize}
+Os dados foram divididos em treino (70\%) e teste (30\%) de forma estratificada (\texttt{random\_state=42}). A comparação entre modelos e o ajuste de hiperparâmetros usaram \textbf{somente o conjunto de treino}, e o conjunto de teste foi reservado para a avaliação final.
 
-O protocolo de validação adotado para a comparação inicial dos quatro modelos foi a validação cruzada estratificada em 5 \textit{folds} (\textit{Stratified 5-Fold Cross-Validation}) com embaralhamento dos dados (\textit{shuffle}), utilizando o $F1_{\text{macro}}$ como critério decisor.
+Com hiperparâmetros padrão, compararam-se a Árvore de Decisão~\cite{breiman1984cart}, o \textit{Bagging}~\cite{breiman1996bagging}, o AdaBoost~\cite{freund1997} e a \textit{Random Forest}~\cite{breiman2001rf} por validação cruzada estratificada de 5 \textit{folds} (com \textit{shuffle}), usando o $F1_{\text{macro}}$ médio como critério. O modelo vencedor foi ajustado com \texttt{GridSearchCV} (mesmas partições, \texttt{scoring='f1\_macro'}), e os modelos padrão e ajustado foram comparados no conjunto de teste. Como o melhor escore de uma busca é otimista~\cite{cawley2010}, o desempenho final é o medido no teste.
 
-O classificador que alcançou o maior valor médio de $F1_{\text{macro}}$ foi selecionado para a fase de ajuste fino de hiperparâmetros (\textit{hyperparameter tuning}). O ajuste foi conduzido através de \textit{GridSearchCV} com validação cruzada interna estratificada de 5 \textit{folds} e métrica de pontuação \texttt{scoring='f1\_macro'}. Por fim, avaliou-se o ganho de desempenho obtido confrontando os resultados do modelo antes e após a otimização no conjunto de teste independente (Holdout 70/30 estratificado).
+\subsection{Parte II: Decomposição multiclasse em problemas binários}
 
-\subsection{Parte II: Decomposição Multiclasse em Problemas Binários}
-\label{subsec:metodologia_parte2}
+Usando \texttt{DecisionTreeClassifier(random\_state=42)} como classificador base~\cite{galar2011}, o problema foi decomposto por \textbf{OVA} (\texttt{OneVsRestClassifier}: um classificador por classe contra as demais, 4 modelos) e \textbf{OVO} (\texttt{OneVsOneClassifier}: um classificador por par de classes, 6 modelos, com votação majoritária). Ambos foram avaliados por (i) \textit{holdout} estratificado 70/30 (mesma partição da Parte I), com acurácia, $F1_{\text{macro}}$ e matrizes de confusão; e (ii) validação cruzada estratificada de 5 \textit{folds} sobre o conjunto completo, com média e desvio padrão das métricas.
 
-Nesta etapa, investigou-se a estratégia de binarização do problema multiclasse utilizando exclusivamente a Árvore de Decisão (\texttt{DecisionTreeClassifier(random\_state=42)}) como algoritmo base:
+\section{Resultados}
 
-\begin{itemize}
-    \item \textbf{One-vs-All (OVA / One-vs-Rest):} Implementado por meio da classe \texttt{OneVsRestClassifier}, treina um classificador binário para cada classe contra o agrupamento das demais, totalizando 4 modelos;
-    \item \textbf{One-vs-One (OVO):} Implementado por meio da classe \texttt{OneVsOneClassifier}, treina um classificador binário dedicado para cada par possível de classes, totalizando $\frac{4 \times 3}{2} = 6$ modelos, com resolução final por votação majoritária.
-\end{itemize}
+\subsection{Parte I: Comparação de modelos e otimização de hiperparâmetros}
 
-Ambas as abordagens foram avaliadas sob dois esquemas de validação complementares:
-\begin{enumerate}
-    \item \textbf{Holdout Estratificado (70/30):} Particionamento dos dados em 70\% para treino e 30\% para teste (\texttt{random\_state=42}), preservando a proporção de cada classe. A partir das predições no conjunto de teste, computaram-se a acurácia, o $F1_{\text{macro}}$ e as matrizes de confusão de cada método.
-    \item \textbf{Validação Cruzada Estratificada ($k=5$):} Avaliação via \texttt{StratifiedKFold(n\_splits=5, shuffle=True, random\_state=42)}, mensurando a média e o desvio padrão da acurácia e do $F1_{\text{macro}}$ ao longo das 5 dobras para determinar a abordagem de melhor desempenho.
-\end{enumerate}
+\begin{table}[htbp]
+\centering
+\caption{Desempenho médio ($\pm$ desvio padrão entre \textit{folds}) na validação cruzada de 5 \textit{folds} sobre o conjunto de treino (1209 instâncias).}
+\label{tab:cv_modelos}
+\begin{tabular}{lcc}
+\toprule
+Modelo & Acurácia & $F1_{\mathrm{macro}}$ \\
+\midrule
+Bagging           & 0{,}9710 $\pm$ 0{,}0128 & \textbf{0{,}9459 $\pm$ 0{,}0203} \\
+Árvore de Decisão & 0{,}9719 $\pm$ 0{,}0109 & 0{,}9397 $\pm$ 0{,}0288 \\
+Random Forest     & 0{,}9661 $\pm$ 0{,}0076 & 0{,}9132 $\pm$ 0{,}0273 \\
+AdaBoost          & 0{,}8528 $\pm$ 0{,}0261 & 0{,}6702 $\pm$ 0{,}0584 \\
+\bottomrule
+\end{tabular}
+\end{table}
 
-\bibliographystyle{plain} % ou 'abntex2-alf', 'ieee', etc.
-\bibliography{referencias} % Nome do seu arquivo referencias.bib (sem a extensão)
+A acurácia é semelhante entre Árvore, \textit{Bagging} e \textit{Random Forest}, pois é dominada pela classe \textit{unacc}, e o $F1_{\mathrm{macro}}$ é que os diferencia (Tabela~\ref{tab:cv_modelos}). O \textit{Bagging} foi selecionado, mas sua vantagem sobre a árvore isolada (0{,}0062) é menor que o desvio entre \textit{folds}, de modo que este protocolo não permite distingui-los. O AdaBoost teve o pior resultado, provavelmente porque seu aprendiz fraco padrão (árvore de profundidade 1) depende de um único atributo e não captura as interações entre atributos que determinam a classe. A \textit{Random Forest} ficou abaixo dos demais no $F1_{\mathrm{macro}}$, possivelmente porque cada nó considera apenas 2 dos 6 atributos, todos relevantes aqui; ambas são hipóteses não testadas, e valem para a configuração padrão.
 
+\begin{table}[htbp]
+\centering
+\caption{Grade de hiperparâmetros do \textit{Bagging} (576 combinações) e melhor configuração. O prefixo \texttt{estimator\_\_} refere-se à árvore base.}
+\label{tab:grid}
+\begin{tabular}{lcc}
+\toprule
+Hiperparâmetro & Valores testados & Melhor \\
+\midrule
+\texttt{estimator\_\_criterion}          & gini, entropy        & entropy \\
+\texttt{estimator\_\_max\_depth}         & None, 10             & None \\
+\texttt{estimator\_\_min\_samples\_leaf} & 1, 2                 & 1 \\
+\texttt{estimator\_\_class\_weight}      & None, balanced       & balanced \\
+\texttt{n\_estimators}                   & 100, 300             & 100 \\
+\texttt{max\_samples}                    & 0{,}6; 0{,}8; 1{,}0  & 0{,}8 \\
+\texttt{max\_features}                   & 4, 5, 6              & 6 \\
+\texttt{bootstrap}                       & True, False          & True \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+A melhor configuração (Tabela~\ref{tab:grid}) elevou o $F1_{\mathrm{macro}}$ da validação interna de 0{,}9459 para 0{,}9653 ($\pm$ 0{,}0162) nas mesmas partições. Contudo, as 10 melhores configurações diferem em apenas 0{,}005, menos que o desvio entre \textit{folds} (0{,}013 a 0{,}021), o que indica baixa sensibilidade aos hiperparâmetros. A configuração escolhida é coerente com o método: árvores sem poda são aprendizes instáveis, cuja variância o \textit{Bagging} reduz~\cite{breiman1996bagging}, e \texttt{class\_weight='balanced'} compensa o desbalanceamento~\cite{he2009}.
+
+\begin{table}[htbp]
+\centering
+\caption{Recall e F1 por classe no conjunto de teste (519 instâncias), antes e depois do ajuste. Acurácia global: 0{,}9692 $\rightarrow$ 0{,}9730.}
+\label{tab:por_classe}
+\begin{tabular}{lccccc}
+\toprule
+ & & \multicolumn{2}{c}{Recall} & \multicolumn{2}{c}{F1} \\
+\cmidrule(lr){3-4} \cmidrule(lr){5-6}
+Classe & Suporte & Antes & Depois & Antes & Depois \\
+\midrule
+\textit{unacc} & 363 & 0{,}9917 & 0{,}9945 & 0{,}9904 & 0{,}9904 \\
+\textit{acc}   & 115 & 0{,}9478 & 0{,}9391 & 0{,}9437 & 0{,}9515 \\
+\textit{good}  & 21  & 0{,}7143 & 0{,}8095 & 0{,}7895 & 0{,}8500 \\
+\textit{vgood} & 20  & 0{,}9500 & 0{,}9500 & 0{,}9048 & 0{,}9048 \\
+\midrule
+Macro          & 519 & 0{,}9010 & 0{,}9233 & 0{,}9071 & \textbf{0{,}9242} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+No conjunto de teste (Tabela~\ref{tab:por_classe}), o ajuste melhorou o $F1_{\mathrm{macro}}$ e a acurácia, com ganho concentrado na classe \textit{good}: o recall passou de 15 para 17 acertos em 21 instâncias, e as confusões de \textit{good} com \textit{acc} caíram de 4 para 2 (Figura~\ref{fig:cm_antes_depois}). Esse resultado é coerente com \texttt{class\_weight='balanced'}, mas deve ser lido com cautela: corresponde a apenas 2 acertos a mais no total (505 contra 503), e uma única instância de \textit{good} ou \textit{vgood} altera o recall em quase 5 pontos percentuais. A diferença entre o $F1_{\mathrm{macro}}$ de teste (0{,}9242) e o da validação interna (0{,}9653) é esperada pelo viés de seleção~\cite{cawley2010}.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.8\textwidth]{img/confusion_matrix_1.png}
+\caption{Matrizes de confusão do \textit{Bagging} no conjunto de teste, antes (esquerda) e depois (direita) do ajuste. Linhas: classe real; colunas: classe predita.}
+\label{fig:cm_antes_depois}
+\end{figure}
+
+\subsection{Parte II: Decomposição multiclasse com OVA e OVO}
+
+\begin{table}[htbp]
+\centering
+\caption{Desempenho de OVA e OVO com Árvore de Decisão. Na validação cruzada, média ($\pm$ desvio padrão) entre os 5 \textit{folds}.}
+\label{tab:ova_ovo}
+\begin{tabular}{llcc}
+\toprule
+Validação & Métrica & OVA & OVO \\
+\midrule
+\textit{Holdout} 70/30 & Acurácia & 0{,}9595 & \textbf{0{,}9750} \\
+\textit{Holdout} 70/30 & $F1_{\mathrm{macro}}$ & 0{,}9089 & \textbf{0{,}9575} \\
+\midrule
+CV 5 \textit{folds} & Acurácia & 0{,}9687 $\pm$ 0{,}0081 & \textbf{0{,}9821 $\pm$ 0{,}0085} \\
+CV 5 \textit{folds} & $F1_{\mathrm{macro}}$ & 0{,}9272 $\pm$ -- & \textbf{0{,}9592 $\pm$ --} \\  % TODO: preencher desvios do F1
+\bottomrule
+\end{tabular}
+\end{table}
+
+O OVO superou o OVA nos dois esquemas de validação e nas duas métricas (Tabela~\ref{tab:ova_ovo}). A diferença é maior no $F1_{\mathrm{macro}}$ do que na acurácia, o que indica que o ganho está nas classes minoritárias: no teste, o OVO acertou 19 das 21 instâncias de \textit{good}, contra 13 do OVA, e 14 dos 21 erros do OVA foram predições \textit{unacc} (Figura~\ref{fig:cm_ova_ovo}). Uma explicação plausível é que, no OVA, os classificadores de \textit{good} e \textit{vgood} enfrentam subproblemas muito desbalanceados (cerca de 4\% contra 96\%), o que favorece a classe majoritária~\cite{he2009}, enquanto no OVO cada classificador é treinado apenas com duas classes~\cite{galar2011}. Como o classificador base não teve hiperparâmetros ajustados, a conclusão vale para essa condição, já que o OVA pode se igualar ao OVO quando o classificador base é bem ajustado~\cite{rifkin2004}.
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.8\textwidth]{img/confusion_martrix_2.png}
+\caption{Matrizes de confusão de OVA (esquerda) e OVO (direita), com Árvore de Decisão como classificador base, no conjunto de teste. Linhas: classe real; colunas: classe predita.}
+\label{fig:cm_ova_ovo}
+\end{figure}
+
+\section{Conclusão}
+
+Na Parte I, o \textit{Bagging} obteve o maior $F1_{\mathrm{macro}}$, equivalente ao da árvore isolada dentro da variabilidade entre \textit{folds}, enquanto AdaBoost e \textit{Random Forest}, em configuração padrão, ficaram abaixo. O ajuste de hiperparâmetros trouxe ganho pequeno no teste, concentrado na classe \textit{good} e equivalente a apenas 2 acertos, com baixa sensibilidade aos hiperparâmetros. Na Parte II, o OVO foi superior ao OVA, sobretudo nas classes minoritárias. Na mesma partição de teste, o OVO com árvore e o \textit{Bagging} ajustado acertaram praticamente o mesmo número de instâncias (506 e 505).
+
+Como limitações, as classes \textit{good} e \textit{vgood} têm cerca de 20 instâncias no teste, de modo que diferenças da ordem de centésimos devem ser interpretadas com cautela, e o conjunto de dados é completo e determinístico, o que impede extrapolar os resultados para dados ruidosos. Como trabalho futuro, sugere-se usar validação cruzada aninhada ou repetida com testes pareados e ajustar também os demais algoritmos para uma comparação em condições equivalentes.
+
+\bibliographystyle{plain}
+\bibliography{referencias}
 
 \end{document}
